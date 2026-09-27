@@ -22,6 +22,17 @@ export type McpServerToolFilterConfig = {
 export type McpServerConfig = {
   /** Set false to keep the saved definition while excluding it from runtime/probe sessions. */
   enabled?: boolean;
+  /**
+   * Worker-only consumption scope (kaiwu-mate patch).
+   *
+   * When true, this server is consumed exclusively by worker-engine projections
+   * (e.g. Codex thread config), and the gateway session MCP runtime must never
+   * spawn a local stdio instance for it. Without this marker both consumers
+   * spawn their own copy of the same stdio server; with a fixed approval port
+   * the loser instance binds nothing and approvals created through it silently
+   * vanish (ERR_CONNECTION_REFUSED on the desktop poller).
+   */
+  workerOnly?: boolean;
   /** Stdio transport: command to spawn. */
   command?: string;
   /** Stdio transport: arguments for the command. */

@@ -106,6 +106,16 @@ export function applyPreparedNativeMcpPolicy(
   return {
     mcpServers: Object.fromEntries(
       Object.entries(config.mcpServers).flatMap(([serverName, server]) => {
+        // Worker-only servers (kaiwu-mate patch) are never spawned by the session
+        // runtime, so they have no policy entry by design — project them as-is
+        // instead of fail-closing, or the worker engine would lose the server too.
+        if (
+          !Object.hasOwn(policy.servers, serverName) &&
+          isRecord(server) &&
+          server.workerOnly === true
+        ) {
+          return [[serverName, server]];
+        }
         const prepared = policy.servers[serverName];
         if (!prepared || prepared.allowedTools.length === 0) {
           return [];

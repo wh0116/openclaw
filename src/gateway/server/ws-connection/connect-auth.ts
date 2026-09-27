@@ -273,6 +273,9 @@ async function authenticateGatewayConnectCore(
     hasBrowserOriginHeader,
     sharedAuthOk,
     authMethod,
+    // kaiwu 定制：Origin 白名单透传（命中视同无 Origin 的本地一等客户端）
+    requestOrigin,
+    trustedLoopbackOrigins: resolvedAuth.trustedLoopbackOrigins,
   });
   let preserveLocalCliSharedAuthScopes = shouldPreserveLocalCliSharedAuthScopes({
     connectParams,
@@ -422,6 +425,9 @@ async function authenticateGatewayConnectCore(
     hasBrowserOriginHeader,
     sharedAuthOk,
     authMethod,
+    // kaiwu 定制：Origin 白名单透传（命中视同无 Origin 的本地一等客户端）
+    requestOrigin,
+    trustedLoopbackOrigins: resolvedAuth.trustedLoopbackOrigins,
   });
   preserveLocalCliSharedAuthScopes = shouldPreserveLocalCliSharedAuthScopes({
     connectParams,

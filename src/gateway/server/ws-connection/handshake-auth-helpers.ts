@@ -234,13 +234,24 @@ export function shouldSkipLocalBackendSelfPairing(params: {
   hasBrowserOriginHeader: boolean;
   sharedAuthOk: boolean;
   authMethod: GatewayAuthResult["method"];
+  /** kaiwu 定制：请求 Origin 头原值（hasBrowserOriginHeader=true 时非空） */
+  requestOrigin?: string;
+  /** kaiwu 定制：信任的 loopback 浏览器 Origin 白名单（gateway.auth.trustedLoopbackOrigins） */
+  trustedLoopbackOrigins?: string[];
 }): boolean {
   const isBackendClient =
     params.connectParams.client.id === GATEWAY_CLIENT_IDS.GATEWAY_CLIENT &&
     params.connectParams.client.mode === GATEWAY_CLIENT_MODES.BACKEND;
   const isLocal =
     params.locality === "direct_local" || params.locality === "shared_secret_loopback_local";
-  if (!isBackendClient || !isLocal || params.hasBrowserOriginHeader) {
+  // kaiwu 定制：桌面 WebView（Tauri）等内嵌浏览器前端连本机 Gateway 时 Origin 头
+  // 强制携带。命中白名单的 Origin 视同无 Origin 头（一等本地客户端），保留自声明
+  // scopes。白名单外行为与上游一致（浏览器 Origin 不可信）。
+  const browserOriginTrusted =
+    !params.hasBrowserOriginHeader ||
+    (params.requestOrigin !== undefined &&
+      params.trustedLoopbackOrigins?.includes(params.requestOrigin) === true);
+  if (!isBackendClient || !isLocal || !browserOriginTrusted) {
     return false;
   }
   // No-auth local backend: scoped bypass — not shared secret, but local-only
