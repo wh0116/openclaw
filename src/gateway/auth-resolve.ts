@@ -26,6 +26,8 @@ export type ResolvedGatewayAuth = {
   password?: string;
   allowTailscale: boolean;
   trustedProxy?: GatewayTrustedProxyConfig;
+  /** kaiwu 定制：信任的 loopback 浏览器 Origin 白名单（见 GatewayAuthConfig 同名字段） */
+  trustedLoopbackOrigins?: string[];
 };
 
 function mergeGatewayAuthConfig(
@@ -80,6 +82,8 @@ function finalizeResolvedGatewayAuth(params: {
       authConfig.allowTailscale ??
       (params.tailscaleMode === "serve" && mode !== "password" && mode !== "trusted-proxy"),
     trustedProxy: authConfig.trustedProxy,
+    // kaiwu 定制：loopback 浏览器 Origin 白名单（override 不参与合并，仅 config 语义）
+    trustedLoopbackOrigins: authConfig.trustedLoopbackOrigins,
   };
 }
 

@@ -1,5 +1,6 @@
 /** Session MCP config loading, filtering, and catalog fingerprints. */
 import crypto from "node:crypto";
+import { isRecord } from "../../packages/normalization-core/src/record-coerce.js";
 import type { SessionToolOverrides } from "../config/sessions/types.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { logWarn } from "../logger.js";
@@ -52,6 +53,22 @@ function createCatalogFingerprint(params: {
   // Algorithm changes can cause one cache miss, but no persisted state migration.
   // Per-user url/headers never enter this hash (see redactMcpServersForFingerprint).
   return crypto.createHash("sha256").update(JSON.stringify(params)).digest("hex");
+}
+
+/**
+ * Drops worker-only servers (kaiwu-mate patch): they are consumed exclusively
+ * by worker-engine projections (e.g. Codex thread config) and must never be
+ * spawned locally by the gateway session MCP runtime.
+ */
+function excludeWorkerOnlyMcpServers(mcpServers: Record<string, unknown>): Record<string, unknown> {
+  if (!Object.values(mcpServers).some((server) => isRecord(server) && server.workerOnly === true)) {
+    return mcpServers;
+  }
+  return Object.fromEntries(
+    Object.entries(mcpServers).filter(
+      ([, server]) => !(isRecord(server) && server.workerOnly === true),
+    ),
+  );
 }
 
 function filterMcpServers<T>(
@@ -120,12 +137,14 @@ export function loadSessionMcpConfig(params: {
   const safeServerNames = digestSafeServerNameAssignments(safeServerNamesByServer);
   const mcpAppsEnabled = params.cfg?.mcp?.apps?.enabled === true;
   const mcpToolsDeny = digestMcpToolDenials(params.toolOverrides?.mcpToolsDeny);
-  const mcpServers = filterMcpServers(loaded.mcpServers, {
-    includeServerNames: params.includeServerNames,
-    excludeServerNames: params.excludeServerNames,
-    safeServerNamesByServer,
-    toolDenylist: params.toolDenylist,
-  });
+  const mcpServers = excludeWorkerOnlyMcpServers(
+    filterMcpServers(loaded.mcpServers, {
+      includeServerNames: params.includeServerNames,
+      excludeServerNames: params.excludeServerNames,
+      safeServerNamesByServer,
+      toolDenylist: params.toolDenylist,
+    }),
+  );
   const prepareDataDirsByServer = Object.fromEntries(
     Object.entries(loaded.prepareDataDirsByServer ?? {}).filter(([serverName]) =>
       Object.hasOwn(mcpServers, serverName),

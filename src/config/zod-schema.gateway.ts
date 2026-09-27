@@ -307,6 +307,9 @@ export const GatewayConfigSchema = z
               .optional(),
           })
           .optional(),
+        // kaiwu 定制：信任的 loopback 浏览器 Origin 白名单（Tauri WebView 前端连
+        // 本机 Gateway 时保留自声明 scopes；详见 GatewayAuthConfig 同名字段注释）
+        trustedLoopbackOrigins: z.array(z.string().min(1)).optional(),
       })
       .optional(),
     /** Optional profile-bound operator roles; omitted preserves legacy authorization. */

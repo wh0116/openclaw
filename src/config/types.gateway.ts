@@ -84,6 +84,17 @@ export type GatewayAuthConfig = Omit<
 > & {
   token?: SecretInput;
   password?: SecretInput;
+  /**
+   * kaiwu 定制：信任的 loopback 浏览器 Origin 白名单（完整 Origin 字符串精确匹配）。
+   * 语义：桌面端 WebView（Tauri）内嵌前端页面连本机 Gateway 时，WS 请求强制携带
+   * 浏览器 Origin 头（无法去除），会被本地 backend 自配对豁免的"无浏览器 Origin"
+   * 关卡拒绝，导致自声明 scopes 被 clearUnboundScopes 清空（missing scope:
+   * operator.write）。命中白名单的 Origin 视同一等本地客户端，保留 scopes。
+   * 安全边界：仅对 loopback 直连生效（locality 判定在前），白名单无法放开外网；
+   * 默认 undefined = 行为与上游完全一致。示例：
+   *   ["http://localhost:5173", "http://tauri.localhost", "tauri://localhost"]
+   */
+  trustedLoopbackOrigins?: string[];
 };
 
 export type GatewayAuthRateLimitConfig = NonNullable<GatewayAuthConfig["rateLimit"]>;

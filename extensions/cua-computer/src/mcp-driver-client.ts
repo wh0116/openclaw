@@ -12,6 +12,13 @@ import {
 const MCP_PROTOCOL_VERSION = "2025-06-18";
 const MCP_STARTUP_TIMEOUT_MS = 10_000;
 const MCP_REQUEST_TIMEOUT_MS = 120_000;
+// 关闭宽限（20 轮订正）：stdin EOF 后等子进程自退的窗口。会话关闭
+// （close → dispose → stop）时 sidecar 可能还有在途审批（waitQuiesce
+// 等用户决策落地，分钟级），2s 硬编码会 TerminateProcess 截断等待——
+// 决策永远落不了地。可经 env 拉长（kaiwu-mate supervisor 注入 5min）：
+// 无在途时子进程 stdin EOF 立即自退，宽限加大零成本。
+const MCP_SHUTDOWN_TIMEOUT_MS =
+  Number.parseInt(process.env.CUA_MCP_SHUTDOWN_GRACE_MS ?? "", 10) || 2_000;
 const MAX_PENDING_REQUESTS = 64;
 const MAX_MCP_LINE_BYTES = 256 * 1024 * 1024;
 const MCP_DESKTOP_TARGET = { kind: "desktop", display_id: "primary" } as const;
